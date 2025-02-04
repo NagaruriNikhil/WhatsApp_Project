@@ -23,8 +23,7 @@ public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, Abstra
     public AbstractAuthenticationToken convert(@NonNull Jwt source) {
         return new JwtAuthenticationToken(
                 source,
-                Stream.concat(
-                                new JwtGrantedAuthoritiesConverter().convert(source).stream(),
+                Stream.concat(new JwtGrantedAuthoritiesConverter().convert(source).stream(),
                                 extractResourceRoles(source).stream())
                         .collect(toSet()));
     }
