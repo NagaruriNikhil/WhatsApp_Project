@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.annotations.Comment;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,7 +22,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class UserSynchronizerFilter extends OncePerRequestFilter {
 
-    private final UserSynchronizer userSynchronizer;
+    private final UserSynchronizer userSynchronizer ;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -33,5 +34,6 @@ public class UserSynchronizerFilter extends OncePerRequestFilter {
              JwtAuthenticationToken token = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
              userSynchronizer.synchronizeWithIdp(token.getToken());
          }
+         filterChain.doFilter(request, response);
     }
 }

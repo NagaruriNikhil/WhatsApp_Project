@@ -2,6 +2,7 @@ package com.nikhil.whatsappclone.chat;
 
 
 import com.nikhil.whatsappclone.common.StringResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/chats")
 @RequiredArgsConstructor
+@Tag(name="Chat")
 public class ChatController {
 
     private final ChatService chatService;
@@ -22,8 +24,8 @@ public class ChatController {
 
     @PostMapping
     public ResponseEntity<StringResponse> createChat(
-            @RequestParam (name "sender-id") String senderId,
-            @RequestParam (name "receiver-id") String receiverId
+            @RequestParam (name="sender-id") String senderId,
+            @RequestParam (name="receiver-id") String receiverId
     ) {
         final String chatId = chatService.createChat(senderId, receiverId);
         StringResponse stringResponse= StringResponse.builder()

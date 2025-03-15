@@ -6,12 +6,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
-      hibernate:
-        format_sql: true
+        hibernate:
+          format_sql: false
     database: postgresql
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: false
   security:
@@ -26,6 +25,8 @@ spring:
 springdoc:
   default-produces-media-type: application/json
 
+server:
+  port: 9292
 
 application:
   file:
