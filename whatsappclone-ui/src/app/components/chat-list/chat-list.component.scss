@@ -1,0 +1,12 @@
+.chat-list {
+  > div {
+    cursor: pointer;
+    &:hover {
+      background-color: #f2f1f1;
+    }
+  }
+}
+
+.border-bottom-gray {
+  border-bottom: solid 1px #ccc;
+}

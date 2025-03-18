@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
 import Keycloak from 'keycloak-js';
+
 @Injectable({
   providedIn: 'root',
 })
 export class KeycloakService {
-  private _keycloak: Keycloak.KeycloakInstance | undefined;
+  private _keycloak: Keycloak | undefined;
 
   constructor() {}
 
-  get keycloak(): Keycloak.KeycloakInstance {
+  get keycloak(): Keycloak {
     if (!this._keycloak) {
-      this._keycloak = Keycloak({
+      this._keycloak = new Keycloak({
         url: 'http://localhost:9090',
         realm: 'whatsapp-clone',
         clientId: 'whatsapp-clone-app',
@@ -32,5 +33,14 @@ export class KeycloakService {
   }
   get isTokenValid() {
     return !this.keycloak.isTokenExpired();
+  }
+  get fullName() {
+    return this.keycloak.tokenParsed?.['name'] as string;
+  }
+  logout() {
+    return this.keycloak.login({ redirectUri: 'http://localhost:4200' });
+  }
+  accountManagement() {
+    return this.keycloak.accountManagement();
   }
 }
