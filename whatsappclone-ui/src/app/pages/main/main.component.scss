@@ -26,3 +26,19 @@
 .back-color {
   background: rgb(236, 233, 233);
 }
+
+.online-status {
+  background: #1ea884;
+  min-width: 10px;
+  max-width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 400;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.gray-bg {
+  background-color: rgb(246, 232, 232);
+}

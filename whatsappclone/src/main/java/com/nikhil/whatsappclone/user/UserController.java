@@ -2,6 +2,7 @@ package com.nikhil.whatsappclone.user;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +19,7 @@ import java.util.List;
 @Tag(name="User")
 public class UserController {
 
+    @Autowired
     private UserService userService;
 
     @GetMapping
