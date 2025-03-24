@@ -51,6 +51,16 @@ public class Chat extends BaseAuditingEntity {
     }
 
     @Transient
+    public String getTargetChatName(final String senderId){
+        if(sender.getId().equals(senderId)){
+            return sender.getFirstName()+ " "+ sender.getLastName();
+        }
+        return recipient.getFirstName()+ " "+ recipient.getLastName();
+    }
+
+
+
+    @Transient
     public long getUnreadMessagesCount(final String senderId)
     {
         return messages

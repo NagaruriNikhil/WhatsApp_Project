@@ -25,7 +25,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/user");
         registry.setApplicationDestinationPrefixes("/app");
-        registry.setUserDestinationPrefix("/users");
+        registry.setUserDestinationPrefix("/user");
     }
 
     @Override
@@ -33,7 +33,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry
                 .addEndpoint("/ws")
                 .setAllowedOrigins("http://localhost:4200")
-                .withSockJS();
+                .withSockJS()
+                .setHeartbeatTime(25_000);
     }
 
     @Override

@@ -1,162 +1,78 @@
 import {
+  AfterViewChecked,
   Component,
-  CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
+  OnDestroy,
   OnInit,
   ViewChild,
-  viewChild,
 } from '@angular/core';
 import { ChatListComponent } from '../../components/chat-list/chat-list.component';
-import { ChatResponse } from '../../services/models/chat-response';
-import { ChatService, MessageService } from '../../services/services';
 import { KeycloakService } from '../../utils/keycloak/keycloak.service';
-import { MessageRequest, MessageResponse } from '../../services/models';
-import { CommonModule } from '@angular/common';
-import { EmojiData, EmojiModule, emojis } from '@ctrl/ngx-emoji-mart/ngx-emoji';
-import { FormsModule } from '@angular/forms';
-import { PickerComponent } from '@ctrl/ngx-emoji-mart';
-import SockJS from 'sockjs-client';
+import { ChatResponse } from '../../services/models/chat-response';
+import { DatePipe } from '@angular/common';
+import { MessageService } from '../../services/services/message.service';
+import { MessageResponse } from '../../services/models/message-response';
 import * as Stomp from 'stompjs';
+import SockJS from 'sockjs-client';
+import { FormsModule } from '@angular/forms';
+import { MessageRequest } from '../../services/models/message-request';
+import { Notification } from './models/Notification';
+import { ChatService } from '../../services/services/chat.service';
+import { PickerComponent } from '@ctrl/ngx-emoji-mart';
+import { EmojiData } from '@ctrl/ngx-emoji-mart/ngx-emoji';
+import { ChangeDetectorRef } from '@angular/core';
+
 @Component({
   selector: 'app-main',
-  imports: [
-    ChatListComponent,
-    CommonModule,
-    FormsModule,
-    EmojiModule,
-    PickerComponent,
-  ],
+  imports: [ChatListComponent, DatePipe, FormsModule, PickerComponent],
   templateUrl: './main.component.html',
   styleUrl: './main.component.scss',
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-export class MainComponent implements OnInit {
-  chats: Array<ChatResponse> = [];
-  messageContent: string = '';
+export class MainComponent implements OnInit, OnDestroy, AfterViewChecked {
   selectedChat: ChatResponse = {};
-  chatMessages: MessageResponse[] = [];
-  showEmojis = false;
+  chats: Array<ChatResponse> = [];
+  chatMessages: Array<MessageResponse> = [];
   socketClient: any = null;
+  messageContent: string = '';
+  showEmojis = false;
   @ViewChild('scrollableDiv') scrollableDiv!: ElementRef<HTMLDivElement>;
   private notificationSubscription: any;
 
   constructor(
     private chatService: ChatService,
-    private keyCloakService: KeycloakService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private keycloakService: KeycloakService,
+    private cdRef: ChangeDetectorRef
   ) {}
 
   ngAfterViewChecked(): void {
     this.scrollToBottom();
   }
-  private scrollToBottom() {
-    if (this.scrollableDiv) {
-      const div = this.scrollableDiv.nativeElement;
-      div.scrollTop = div.scrollHeight;
+
+  ngOnDestroy(): void {
+    if (this.socketClient !== null) {
+      this.socketClient.disconnect();
+      this.notificationSubscription.unsubscribe();
+      this.socketClient = null;
     }
   }
+
   ngOnInit(): void {
+    this.initWebSocket();
     this.getAllChats();
-    //this.initWebSocket();
-  }
-
-  private getAllChats() {
-    this.chatService.getChatsByReceiver().subscribe({
-      next: (res) => {
-        this.chats = res;
-      },
-    });
-  }
-
-  logout() {
-    this.keyCloakService.logout();
-  }
-  userProfile() {
-    this.keyCloakService.accountManagement();
   }
 
   chatSelected(chatResponse: ChatResponse) {
     this.selectedChat = chatResponse;
-    console.log(this.selectedChat);
-
     this.getAllChatMessages(chatResponse.id as string);
     this.setMessagesToSeen();
-    // this.selectedChat.unreadCount = 0;
-  }
-  private setMessagesToSeen() {
-    this.messageService
-      .setMessagesToSeen({
-        'chat-id': this.selectedChat.id as string,
-      })
-      .subscribe({
-        next: () => {},
-      });
+    this.selectedChat.unreadCount = 0;
   }
 
   isSelfMessage(message: MessageResponse): boolean {
-    return message.senderId === this.keyCloakService.userId;
+    return message.senderId === this.keycloakService.userId;
   }
 
-  getAllChatMessages(chatId: string) {
-    this.messageService
-      .getMessages({
-        'chat-id': chatId,
-      })
-      .subscribe({
-        next: (messages) => {
-          this.chatMessages = messages;
-        },
-      });
-  }
-
-  uploadMedia(target: EventTarget | null) {
-    const file = this.extractFileFromTarget(target);
-    if (file !== null) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (reader.result) {
-          const mediaLines = reader.result.toString().split(',')[1];
-          this.messageService
-            .uploadMedia({
-              'chat-id': this.selectedChat.id as string,
-              body: {
-                file: file,
-              },
-            })
-            .subscribe({
-              next: () => {
-                const message: MessageResponse = {
-                  senderId: this.getSenderId(),
-                  receiverId: this.getReceiverId(),
-                  content: 'Attachment',
-                  type: 'IMAGE',
-                  state: 'SENT',
-                  media: [mediaLines],
-                  createdAt: new Date().toString(),
-                };
-                this.chatMessages.push(message);
-              },
-            });
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  onSelectEmojis(emojiSelected: any) {
-    const emoji: EmojiData = emojiSelected.emoji;
-    this.messageContent += emoji.native;
-  }
-
-  onClick() {
-    this.setMessagesToSeen();
-  }
-
-  keyDown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      this.sendMessage();
-    }
-  }
   sendMessage() {
     if (this.messageContent) {
       const messageRequest: MessageRequest = {
@@ -189,38 +105,187 @@ export class MainComponent implements OnInit {
     }
   }
 
-  // private initWebSocket() {
-  //   if (this.keyCloakService.keycloak.tokenParsed?.sub) {
-  //     let ws = new SockJS('http://localhost:9292/ws');
-  //     this.socketClient = Stomp.over(ws);
-  //     const subUrl = `/user/${this.keyCloakService.keycloak.tokenParsed?.sub}/chat`;
-  //     this.socketClient.connect(
-  //       { Authorization: 'Bearer ' + this.keyCloakService.keycloak.token },
-  //       () => {
-  //         this.notificationSubscription = this.socketClient.subscribe(
-  //           subUrl,
-  //           (message: any) => {
-  //             const notification: Notification = JSON.parse(message.body);
-  //             // this.handleNotification(notification);
-  //           },
-  //           () => console.error('Error while connecting to websocket')
-  //         );
-  //       }
-  //     );
-  //   }
-  // }
-  private getReceiverId(): string {
-    if (this.selectedChat.senderId === this.keyCloakService.userId) {
+  keyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      this.sendMessage();
+    }
+  }
+
+  onSelectEmojis(emojiSelected: any) {
+    const emoji: EmojiData = emojiSelected.emoji;
+    this.messageContent += emoji.native;
+  }
+
+  onClick() {
+    this.setMessagesToSeen();
+  }
+
+  uploadMedia(target: EventTarget | null) {
+    const file = this.extractFileFromTarget(target);
+    if (file !== null) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result) {
+          const mediaLines = reader.result.toString().split(',')[1];
+
+          this.messageService
+            .uploadMedia({
+              'chat-id': this.selectedChat.id as string,
+              body: {
+                file: file,
+              },
+            })
+            .subscribe({
+              next: () => {
+                const message: MessageResponse = {
+                  senderId: this.getSenderId(),
+                  receiverId: this.getReceiverId(),
+                  content: 'Attachment',
+                  type: 'IMAGE',
+                  state: 'SENT',
+                  media: [mediaLines],
+                  createdAt: new Date().toString(),
+                };
+                this.chatMessages.push(message);
+              },
+            });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  logout() {
+    this.keycloakService.logout();
+  }
+
+  userProfile() {
+    this.keycloakService.accountManagement();
+  }
+
+  private setMessagesToSeen() {
+    this.messageService
+      .setMessagesToSeen({
+        'chat-id': this.selectedChat.id as string,
+      })
+      .subscribe({
+        next: () => {},
+      });
+  }
+
+  private getAllChats() {
+    this.chatService.getChatsByReceiver().subscribe({
+      next: (res) => {
+        this.chats = res;
+      },
+    });
+  }
+
+  private getAllChatMessages(chatId: string) {
+    this.messageService
+      .getMessages({
+        'chat-id': chatId,
+      })
+      .subscribe({
+        next: (messages) => {
+          this.chatMessages = messages;
+        },
+      });
+  }
+
+  private initWebSocket() {
+    if (this.keycloakService.keycloak.tokenParsed?.sub) {
+      let ws = new SockJS('http://localhost:9292/ws');
+      this.socketClient = Stomp.over(ws);
+      const subUrl = `/user/${this.keycloakService.keycloak.tokenParsed?.sub}/chat`;
+      this.socketClient.connect(
+        { Authorization: 'Bearer ' + this.keycloakService.keycloak.token },
+        () => {
+          this.notificationSubscription = this.socketClient.subscribe(
+            subUrl,
+            (message: any) => {
+              const notification: Notification = JSON.parse(message.body);
+              this.handleNotification(notification);
+            },
+            () => console.error('Error while connecting to webSocket')
+          );
+        }
+      );
+    }
+  }
+
+  private handleNotification(notification: Notification) {
+    if (!notification) return;
+    if (this.selectedChat && this.selectedChat.id === notification.chatId) {
+      switch (notification.type) {
+        case 'MESSAGE':
+        case 'IMAGE':
+          const message: MessageResponse = {
+            senderId: notification.senderId,
+            receiverId: notification.receiverId,
+            content: notification.content,
+            type: notification.messageType,
+            media: notification.media,
+            createdAt: new Date().toString(),
+          };
+          if (notification.type === 'IMAGE') {
+            this.selectedChat.lastMessage = 'Attachment';
+          } else {
+            this.selectedChat.lastMessage = notification.content;
+          }
+          this.chatMessages.push(message);
+          this.cdRef.detectChanges();
+          break;
+        case 'SEEN':
+          this.chatMessages.forEach((m) => (m.state = 'SEEN'));
+          break;
+      }
+    } else {
+      const destChat = this.chats.find((c) => c.id === notification.chatId);
+      if (destChat && notification.type !== 'SEEN') {
+        if (notification.type === 'MESSAGE') {
+          destChat.lastMessage = notification.content;
+        } else if (notification.type === 'IMAGE') {
+          destChat.lastMessage = 'Attachment';
+        }
+        destChat.lastMessageTime = new Date().toString();
+        destChat.unreadCount! += 1;
+      } else if (notification.type === 'MESSAGE') {
+        const newChat: ChatResponse = {
+          id: notification.chatId,
+          senderId: notification.senderId,
+          receiverId: notification.receiverId,
+          lastMessage: notification.content,
+          name: notification.chatName,
+          unreadCount: 1,
+          lastMessageTime: new Date().toString(),
+        };
+        this.chats.unshift(newChat);
+      }
+    }
+  }
+
+  private getSenderId(): string {
+    if (this.selectedChat.senderId === this.keycloakService.userId) {
       return this.selectedChat.senderId as string;
     }
     return this.selectedChat.receiverId as string;
   }
-  private getSenderId(): string {
-    if (this.selectedChat.senderId === this.keyCloakService.userId) {
+
+  private getReceiverId(): string {
+    if (this.selectedChat.senderId === this.keycloakService.userId) {
       return this.selectedChat.receiverId as string;
     }
     return this.selectedChat.senderId as string;
   }
+
+  private scrollToBottom() {
+    if (this.scrollableDiv) {
+      const div = this.scrollableDiv.nativeElement;
+      div.scrollTop = div.scrollHeight;
+    }
+  }
+
   private extractFileFromTarget(target: EventTarget | null): File | null {
     const htmlInputTarget = target as HTMLInputElement;
     if (target === null || htmlInputTarget.files === null) {
