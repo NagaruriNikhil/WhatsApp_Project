@@ -25,6 +25,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "bootstrap": "^5.3.3",
+    "emoji-mart": "^5.6.0",
     "keycloak-angular": "^19.0.2",
     "keycloak-js": "^26.1.4",
     "ng-openapi-gen": "^0.52.0",

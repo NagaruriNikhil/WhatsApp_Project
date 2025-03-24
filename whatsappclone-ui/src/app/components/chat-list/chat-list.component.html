@@ -13,8 +13,7 @@
     ></i>
     }
   </div>
-
-  <div class="d-flex flex-column gap-2 p-2">
+  <div class="d-flex flex-column gap-1 p-2">
     <div class="input-group">
       <span class="input-group-text">
         <i class="fas fa-search"></i>
@@ -37,7 +36,6 @@
     </div>
   </div>
 </div>
-
 <div class="chat-list mt-3">
   @if (chats().length && !searchNewContact) { @for (chat of chats(); track chat)
   {
@@ -52,7 +50,7 @@
       <div class="d-flex flex-column">
         <span>{{ chat.name }}</span>
         <small class="text-secondary">
-          @if (chat.lastMessage ==='Attachment') {
+          @if (chat.lastMessage === 'Attachment') {
           <i class="fas fa-image"></i>
           }
           {{ wrapMessage(chat.lastMessage) }}
@@ -63,39 +61,37 @@
       <span
         class="msg-date"
         [class.unread]="chat.unreadCount && chat.unreadCount > 0"
+        >{{ chat.lastMessageTime | date : "dd.MM.yy HH:mm" }}</span
       >
-        {{ chat.lastMessageTime | date : "dd.MM.yy HH:mm" }}
-      </span>
-      @if (chat.unreadCount && chat.unreadCount>0) {
+      @if (chat.unreadCount && chat.unreadCount > 0) {
       <small class="unread-msg-badge">{{ chat.unreadCount }}</small>
       }
     </div>
   </div>
-
-  } } @else if(searchNewContact){ @for (contact of contacts; track contact) {
+  } } @else if (searchNewContact) { @for (contact of contacts; track contact) {
   <div
     class="d-flex align-items-center justify-content-between border-bottom-gray p-2"
     (click)="selectContact(contact)"
-  ></div>
-
-  <div class="d-flex gap-2">
-    <div class="user-img">
-      <img src="/assets/user.png" alt="" />
-    </div>
-    <div class="d-flex flex-column">
-      <span>{{ contact.firstName + " " + contact.lastName }}</span>
-      @if (contact.online) {
-      <small class="text-secondary">Online</small>
-      }@else {
-      <small class="text-secondary"
-        >Last seen&nbsp;{{
-          contact.lastSeen | date : "dd.MM.yyyy HH:mm"
-        }}</small
-      >
-      }
+  >
+    <div class="d-flex gap-2">
+      <div class="user-img">
+        <img src="/assets/user.png" alt="" />
+      </div>
+      <div class="d-flex flex-column">
+        <span>{{ contact.firstName + " " + contact.lastName }}</span>
+        @if (contact.online) {
+        <small class="text-secondary">Online</small>
+        } @else {
+        <small class="text-secondary"
+          >Last seen&nbsp;{{
+            contact.lastSeen | date : "dd.mm.yyyy HH:mm"
+          }}</small
+        >
+        }
+      </div>
     </div>
   </div>
   } } @else {
-  <small>No chat yet..</small>
+  <span>Not chat yet..</span>
   }
 </div>
