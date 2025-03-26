@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -25,6 +26,11 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers(Authentication authentication){
         return  ResponseEntity.ok(userService.getAllUsersExceptSelf(authentication));
+    }
+
+    @GetMapping("sender")
+    public ResponseEntity<User> getSender(@RequestParam String publicId){
+        return ResponseEntity.ok(userService.getUserByPublicId(publicId));
     }
 
 }

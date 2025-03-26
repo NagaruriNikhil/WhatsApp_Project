@@ -1,5 +1,6 @@
 package com.nikhil.whatsappclone.user;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -19,5 +20,10 @@ public class UserService {
                 .stream()
                 .map(userMapper::toUserResponse)
                 .toList();
+    }
+
+    public User getUserByPublicId(String publicId){
+        return userRepository.findByPublicId(publicId)
+                .orElseThrow(()-> new EntityNotFoundException("user with id "+publicId+" not found"));
     }
 }
